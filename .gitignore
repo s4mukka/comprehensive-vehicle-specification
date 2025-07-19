@@ -1,0 +1,30 @@
+# Rye
+.rye/
+.venv/
+.pyenv/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+*.zip
+
+# Caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Data - Assuming you don't want to version control large data files
+/data/raw/
+/data/trusted/
+/data/refined/
+
+# IDEs
+.vscode/
+
+# Volumes
+spark-warehouse

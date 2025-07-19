@@ -1,0 +1,89 @@
+version: '3.8'
+
+services:
+  minio:
+    image: minio/minio:RELEASE.2023-09-04T19-57-37Z
+    container_name: minio
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - data_lake_net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  create-buckets:
+    image: minio/mc
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      /usr/bin/mc alias set myminio http://minio:9000 minioadmin minioadmin;
+      /usr/bin/mc mb myminio/raw;
+      /usr/bin/mc mb myminio/trusted;
+      /usr/bin/mc mb myminio/refined;
+      exit 0;
+      "
+    networks:
+      - data_lake_net
+
+  postgres_metastore:
+    image: postgres:14
+    container_name: postgres_metastore
+    environment:
+      - POSTGRES_USER=iceberg
+      - POSTGRES_PASSWORD=iceberg
+      - POSTGRES_DB=iceberg_metastore
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - data_lake_net
+
+  trino:
+    image: trinodb/trino:426
+    container_name: trino
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./trino_configs:/etc/trino
+    depends_on:
+      - minio
+      - postgres_metastore
+    networks:
+      - data_lake_net
+
+  pyspark-dev:
+    build: ./docker
+    container_name: pyspark_dev_container
+    tty: true
+    stdin_open: true
+    volumes:
+      - ./:/app
+    working_dir: /app
+    depends_on:
+      - create-buckets
+    networks:
+      - data_lake_net
+    environment:
+      - AWS_ACCESS_KEY=minioadmin
+      - AWS_SECRET_KEY=minioadmin
+
+networks:
+  data_lake_net:
+    driver: bridge
+
+volumes:
+  minio_data:
+  postgres_data:
