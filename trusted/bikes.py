@@ -5,7 +5,7 @@ from datalib.etl import ETLManager, extract, load, transform
 
 
 @transform()
-class DataValidate:
+class CleanData:
     df = extract(table="raw.vehicles.bikes", format="iceberg")
 
     def _extract_value(self, column_name):

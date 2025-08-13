@@ -2,7 +2,7 @@ from datalib.etl import ETLManager, extract, load, transform
 
 
 @transform()
-class DataValidate:
+class UnifiesVehicles:
     bikes_df = extract(table="trusted.vehicles.bikes", format="iceberg")
     cars_df = extract(table="trusted.vehicles.cars", format="iceberg")
 
